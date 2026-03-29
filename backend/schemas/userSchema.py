@@ -1,0 +1,20 @@
+from pydantic import BaseModel, EmailStr, Field
+from typing import Optional
+
+class UserRegister(BaseModel):
+    firstname: str = Field(min_length=2, max_length=50)
+    lastname: str = Field(min_length=2, max_length=50)
+    email: EmailStr
+    password: str = Field(min_length=8)
+    isVerified:bool=Field(default=False)
+    
+class UserRegisterGoogle(BaseModel):
+    firstname: str = Field(min_length=2, max_length=50)
+    lastname: str = Field(min_length=2, max_length=50)
+    email: EmailStr
+    google_id: str  
+
+class UserResponse(BaseModel):
+    firstname: str
+    lastname: str
+    email: EmailStr
