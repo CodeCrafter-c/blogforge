@@ -48,7 +48,6 @@ async def send_otp(user_id:str,email:str)->str:
     
 async def verify_otp(user_id:str,otp:str)->bool:
     db=get_db()
-    
     otp_doc=await db["otp"].find_one({
         "user_id":user_id,
         "otp":otp,
