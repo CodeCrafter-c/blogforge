@@ -6,7 +6,6 @@ class UserRegister(BaseModel):
     lastname: str = Field(min_length=2, max_length=50)
     email: EmailStr
     password: str = Field(min_length=8)
-    isVerified:bool=Field(default=False)
     
 class UserRegisterGoogle(BaseModel):
     firstname: str = Field(min_length=2, max_length=50)

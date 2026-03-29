@@ -5,11 +5,10 @@ auth_router=APIRouter()
 
 @auth_router.post("/register")
 async def register_user(userData:UserRegister):
-    user= await create_user(userData)
-    if(user):
-        print("hi")
+    user_id= await create_user(userData)
+    if(user_id):
         return {
-            "message":"user created successfuly",
-            "user_id":str(user)
+        "message": "User created successfully, OTP sent to your email",
+        "user_id": str(user_id)
         }
     

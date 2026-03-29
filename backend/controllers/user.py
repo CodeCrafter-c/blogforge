@@ -1,6 +1,7 @@
 from services.hash import hash_password
 from core.connection import get_db
 from schemas.userSchema import UserRegister
+from services.otp import send_otp 
 
 async def create_user(userData:UserRegister):
     db=get_db()
@@ -22,10 +23,18 @@ async def create_user(userData:UserRegister):
         "email":userData.email,
         "password":hashed_password,
         "auth_provider":'local',
+        "is_verified":False
     }
     
     result=await collection.insert_one(user)
-    return result.inserted_id
+    user_id=str(result.inserted_id)
+    
+    otp=await send_otp(email=userData.email,user_id=user_id)
+    if not otp:
+        await collection.delete_one({"_id":result.inserted_id})
+        return None
+    return user_id
+
         
         
         

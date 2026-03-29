@@ -14,7 +14,8 @@ async def create_indexes():
     await db["users"].create_index("email", unique=True)
 
     await db["users"].create_index("google_id", unique=True, sparse=True)
-
+    await db["otp"].create_index("user_id")  
+    await db["otp"].create_index("expires_at", expireAfterSeconds=0)
 
 async def close_mongo_connection():
     global client
