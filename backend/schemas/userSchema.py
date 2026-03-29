@@ -17,3 +17,8 @@ class UserResponse(BaseModel):
     firstname: str
     lastname: str
     email: EmailStr
+
+class verifyOtp(BaseModel):
+    user_id:str
+    otp:str=Field(max_length=6,min_length=6)
+    
