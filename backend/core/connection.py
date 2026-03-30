@@ -17,6 +17,9 @@ async def create_indexes():
     await db["otp"].create_index("user_id")  
     await db["otp"].create_index("expires_at", expireAfterSeconds=0)
 
+    await db["refresh_tokens"].create_index("user_id")
+    await db["refresh_tokens"].create_index("created_at", expireAfterSeconds=60*60*24*7)
+
 async def close_mongo_connection():
     global client
     if client:

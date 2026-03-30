@@ -46,7 +46,7 @@ async def send_otp(user_id:str,email:str)->str:
     return otp
     
     
-async def verify_otp(user_id:str,otp:str)->bool:
+async def verify_otp(user_id:str,otp:str):
     db=get_db()
     otp_doc=await db["otp"].find_one({
         "user_id":user_id,
@@ -55,11 +55,11 @@ async def verify_otp(user_id:str,otp:str)->bool:
     })
     
     if not otp_doc:
-        return False
+        return None
     
     await db["users"].update_one(
         {"_id":ObjectId(user_id)},
         {"$set":{"is_verified":True}}
         
     )
-    return True
+    return user_id
