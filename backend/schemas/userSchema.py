@@ -21,3 +21,6 @@ class verifyOtp(BaseModel):
     user_id:str
     otp:str=Field(max_length=6,min_length=6)
     
+class userLogin(BaseModel):
+    email:EmailStr
+    password:str=Field(min_length=8)
