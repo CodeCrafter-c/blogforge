@@ -2,9 +2,11 @@ from services.hash import hash_password,verify_password
 from core.connection import get_db
 from schemas.userSchema import UserRegister,userLogin
 from services.otp import send_otp 
-from services.jwt import issue_token
+from services.jwt import issue_token,decode_refresh_token
 from services.set_tokens import set_tokens
-from fastapi import Response
+from fastapi import Response,Request
+
+
 async def create_user(userData:UserRegister):
     db=get_db()
     collection=db["users"]
@@ -73,3 +75,13 @@ async def login_user(data:userLogin,response: Response):
     set_tokens(tokens,response)
     return {"status": "success", "user_id": user_id} 
 
+async def logout_user(user_id:str,req:Request,res:Response):
+    db=get_db()
+    
+    refresh_token = req.cookies.get("refresh_token")
+    payload = decode_refresh_token(refresh_token)
+    res.delete_cookie("access_token")
+    res.delete_cookie("refresh_token")
+    if(payload):
+        await db["refresh_tokens"].delete_one({"jti": payload["jti"]})
+    

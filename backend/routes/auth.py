@@ -1,7 +1,8 @@
-from fastapi import APIRouter,HTTPException,Response
+from fastapi import APIRouter,HTTPException,Response,Request,Depends
 from schemas.userSchema import UserRegister , verifyOtp,userLogin
-from controllers.user import create_user,login_user
+from controllers.user import create_user,login_user,logout_user
 from controllers.verify_user_otp import verify_user_otp
+from middlewares.auth import auth
 auth_router=APIRouter()
 
 @auth_router.post("/register")
@@ -44,3 +45,10 @@ async def login_route(data:userLogin,response:Response):
         "message":"login successfull",
         "user_id":result["user_id"]
     }
+    
+
+@auth_router.post("/logout")
+async def logout_route(req:Request,res:Response,user_id:str=Depends(auth)):
+    await logout_user(user_id,req,res)
+    return {"message": "Logged out successfully"}
+
