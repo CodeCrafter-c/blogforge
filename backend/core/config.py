@@ -10,6 +10,7 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRY_MINS:int=15
     REFRESH_TOKEN_EXPIRY_DAYS:int=7
     MODE:str="development"
+    LLM:str="qwen2.5:7b"
     
     model_config=SettingsConfigDict(
         env_file=".env",
