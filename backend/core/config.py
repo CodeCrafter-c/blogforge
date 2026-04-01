@@ -11,6 +11,7 @@ class Settings(BaseSettings):
     REFRESH_TOKEN_EXPIRY_DAYS:int=7
     MODE:str="development"
     LLM:str="qwen2.5:7b"
+    TAVILY:str
     
     model_config=SettingsConfigDict(
         env_file=".env",

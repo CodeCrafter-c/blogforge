@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import List,Literal
+from typing import List,Literal,Optional
 
 class Task(BaseModel):
     id:int
@@ -16,11 +16,34 @@ class Task(BaseModel):
             ...,
             description="use common_mistakes exaclty once in the plan"
         )
-
+    tags:List[str]=Field(default_factory=list)
+    requires_research:bool
+    requires_citations:bool
+    requires_code:bool
     
 class Plan(BaseModel):
     blog_title:str
     audience:str
     tone:str
+    blog_kind:Literal["explainer","tutorial","news_roundup","comparison","system_design"]
+    constraints:List[str]=Field(default_factory=list)
     tasks:List[Task]
+    
+    
+class RouterDecision(BaseModel):
+    needs_research:bool
+    mode:Literal["closed_book","hybrid","open_book"]
+    queries:List[str]=Field(default_factory=list)
+    reasoning:str
+class EvidenceItem(BaseModel):
+    title:str
+    url:str
+    published_at:Optional[str]=None
+    snippet:Optional[str]=None
+    source:Optional[str]=None
+    
+class EvidencePack(BaseModel):
+    evidence:List[EvidenceItem]=Field(default_factory=list)
+    
+    
     
