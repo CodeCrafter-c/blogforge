@@ -40,7 +40,7 @@ const AgentStep = ({ icon: Icon, label, color, delay }) => (
   </motion.div>
 );
 
-export default function Hero() {
+export default function Hero({onGetStarted}) {
   return (
     <section style={{ padding: '160px 0 100px', position: 'relative', overflow: 'hidden' }}>
 
@@ -115,7 +115,7 @@ export default function Hero() {
             {...fadeUp(0.3)}
             style={{ display: 'flex', gap: '14px', marginBottom: '80px', flexWrap: 'wrap', justifyContent: 'center' }}
           >
-            <button className="btn btn-primary" style={{ padding: '15px 32px', fontSize: '16px', gap: '8px' }}>
+            <button className="btn btn-primary" style={{ padding: '15px 32px', fontSize: '16px', gap: '8px' }} onClick={onGetStarted}>
               Generate your first blog
               <ArrowRight size={16} />
             </button>
