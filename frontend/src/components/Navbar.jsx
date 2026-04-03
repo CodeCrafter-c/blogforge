@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Sparkles } from 'lucide-react';
 
-export default function Navbar() {
+export default function Navbar({onLogin, onRegister}) {
   const [scrolled, setScrolled] = useState(false);
 
   useEffect(() => {
@@ -63,10 +63,10 @@ export default function Navbar() {
 
         {/* CTAs */}
         <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-          <button className="btn btn-ghost" style={{ padding: '10px 20px', fontSize: '14px' }}>
+          <button className="btn btn-ghost" style={{ padding: '10px 20px', fontSize: '14px' }} onClick={onLogin}>
             Log in
           </button>
-          <button className="btn btn-primary" style={{ padding: '10px 20px', fontSize: '14px' }}>
+          <button className="btn btn-primary" style={{ padding: '10px 20px', fontSize: '14px' }} onClick={onRegister}>
             Get started
           </button>
         </div>
