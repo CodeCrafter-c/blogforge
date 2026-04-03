@@ -12,7 +12,7 @@ class UserRegisterGoogle(BaseModel):
     lastname: str = Field(min_length=2, max_length=50)
     email: EmailStr
     google_id: str  
-
+    token:str
 class UserResponse(BaseModel):
     firstname: str
     lastname: str

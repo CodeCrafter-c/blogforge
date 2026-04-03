@@ -1,12 +1,12 @@
 from services.hash import hash_password,verify_password
 from core.connection import get_db
-from schemas.userSchema import UserRegister,userLogin
+from schemas.userSchema import UserRegister,userLogin,UserRegisterGoogle
 from services.otp import send_otp 
 from services.jwt import issue_token,decode_refresh_token
 from services.set_tokens import set_tokens
 from fastapi import Response,Request
-
-
+import httpx
+from bson import ObjectId
 async def create_user(userData:UserRegister):
     db=get_db()
     collection=db["users"]
@@ -85,3 +85,49 @@ async def logout_user(user_id:str,req:Request,res:Response):
     if(payload):
         await db["refresh_tokens"].delete_one({"jti": payload["jti"]})
     
+    
+async def google_login(data:UserRegisterGoogle,response:Response):
+    db=get_db()
+    
+    # verify clerk token
+    async with httpx.AsyncClient() as Client:
+        res=await Client.get(
+            "https://api.clerk.com/v1/me",
+            headers={"Authorization": f"Bearer {data.token}"}
+        )
+        if res.status_code!=200:
+            return {"clerk_token":"invalid"}
+        
+    # check if user already exists
+    existing=await db["users"].find_one({"email":data.email})
+        
+    if(existing):
+        userId=str(existing["_id"])
+    else:
+        result=await db["users"].insert_one({
+            "firstname":data.firstname,
+            "lastname":data.lastname,
+            "email":data.email,
+            "google_id":data.google_id,
+            "password":None,
+            "auth_provider":"google",
+            "is_verified":True
+        }) 
+        userId=str(result.inserted_id)
+        
+    #issue tokens
+    tokens=await issue_token(userId)
+    set_tokens(tokens,response)
+    return {"clerk_token":"valid","userId":userId}
+
+async def get_user(userId:str):
+    db = get_db()
+    user = await db["users"].find_one({"_id": ObjectId(userId)})
+    if not user:
+        return{"user":None}
+    return {
+        "user_id": userId,
+        "firstname": user["firstname"],
+        "lastname": user["lastname"],
+        "email": user["email"],
+    }

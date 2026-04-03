@@ -1,6 +1,6 @@
 from fastapi import APIRouter,HTTPException,Response,Request,Depends
-from schemas.userSchema import UserRegister , verifyOtp,userLogin
-from controllers.user import create_user,login_user,logout_user
+from schemas.userSchema import UserRegister , verifyOtp,userLogin,UserRegisterGoogle
+from controllers.user import create_user,login_user,logout_user,google_login,get_user
 from controllers.verify_user_otp import verify_user_otp
 from middlewares.auth import auth
 auth_router=APIRouter()
@@ -46,9 +46,30 @@ async def login_route(data:userLogin,response:Response):
         "user_id":result["user_id"]
     }
     
+    
+    
+@auth_router.post("/google")
+async def google_auth_route(data:UserRegisterGoogle,response:Response):
+    result=await google_login(data,response)
+    if(result["clerk_token"]=="invalid"):
+        raise HTTPException(status_code=401,detail="invalid clerk token")
+    userId=result["userId"]
+    return {
+        "message":"google login succesfull",
+        "userId":userId
+    }
+
 
 @auth_router.post("/logout")
 async def logout_route(req:Request,res:Response,user_id:str=Depends(auth)):
     await logout_user(user_id,req,res)
     return {"message": "Logged out successfully"}
 
+@auth_router.get("/me")
+async def get_me(user_id: str = Depends(auth)):
+    user=await get_user(user_id)
+    if(not user):
+        raise HTTPException(status_code=404,detail="User not found")
+    return {
+        "data":user
+    }
