@@ -68,6 +68,7 @@ async def logout_route(req:Request,res:Response,user_id:str=Depends(auth)):
 @auth_router.get("/me")
 async def get_me(user_id: str = Depends(auth)):
     user=await get_user(user_id)
+    
     if(not user):
         raise HTTPException(status_code=404,detail="User not found")
     return {

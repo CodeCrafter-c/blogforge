@@ -7,6 +7,10 @@ from services.set_tokens import set_tokens
 from fastapi import Response,Request
 import httpx
 from bson import ObjectId
+from core.config import settings
+from clerk_backend_api import Clerk
+from jose import jwt
+
 async def create_user(userData:UserRegister):
     db=get_db()
     collection=db["users"]
@@ -86,18 +90,30 @@ async def logout_user(user_id:str,req:Request,res:Response):
         await db["refresh_tokens"].delete_one({"jti": payload["jti"]})
     
     
+# clerk=Clerk(bearer_auth=settings.CLERK_SECRET_KEY)
 async def google_login(data:UserRegisterGoogle,response:Response):
     db=get_db()
-    
+    print(f"cel: ${settings.CLERK_SECRET_KEY}")
+    jwks_url = "https://normal-koi-9.clerk.accounts.dev/.well-known/jwks.json"
+    jwks_client = jwt.PyJWKClient(jwks_url)
     # verify clerk token
-    async with httpx.AsyncClient() as Client:
-        res=await Client.get(
-            "https://api.clerk.com/v1/me",
-            headers={"Authorization": f"Bearer {data.token}"}
+    try:
+        signing_key = jwks_client.get_signing_key_from_jwt(data.token)
+        decoded = jwt.decode(
+            data.token,
+            signing_key.key,
+            algorithms=["RS256"],         # Fixed: Added 's' to algorithms
+            options={"verify_aud": False} # Fixed: Changed colon to underscore
         )
-        if res.status_code!=200:
-            return {"clerk_token":"invalid"}
-        
+        if decoded.get("sub") != data.google_id:
+            raise Exception("Token user mismatch")
+
+    except Exception as e:
+        return {
+            "clerk_token": "invalid",
+            "reason": str(e)
+        }
+
     # check if user already exists
     existing=await db["users"].find_one({"email":data.email})
         

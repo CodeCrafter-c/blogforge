@@ -40,4 +40,4 @@ def run(topic: str):
     )
 
     return out
-run("State of Multimodal LLMs in 2026")
+run("iran usa war")
