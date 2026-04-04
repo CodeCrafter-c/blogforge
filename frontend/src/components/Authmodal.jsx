@@ -3,7 +3,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, Eye, EyeOff, Sparkles, ArrowRight, Loader, Mail, RotateCcw, CheckCircle } from 'lucide-react';
 import axios from 'axios';
 
-const API = 'http://localhost:8000';
+import { useSignIn, useAuth, useSession, useUser } from "@clerk/clerk-react";
+
 
 // ─── OTP Screen ──────────────────────────────
 function OTPScreen({ userId, email, onSuccess, onBack }) {
@@ -49,7 +50,7 @@ function OTPScreen({ userId, email, onSuccess, onBack }) {
     if (code.length < 6) { setError('Enter all 6 digits'); return; }
     setLoading(true);
     try {
-      await axios.post(`${API}/auth/verify-otp`, { user_id: userId, otp: code }, { withCredentials: true });
+      await axios.post(`${import.meta.env.VITE_BACKEND_PATH}/auth/verify-otp`, { user_id: userId, otp: code }, { withCredentials: true });
       setSuccess(true);
       setTimeout(() => onSuccess(), 1400);
     } catch (err) {
@@ -64,7 +65,7 @@ function OTPScreen({ userId, email, onSuccess, onBack }) {
   const handleResend = async () => {
     setResending(true);
     try {
-      await axios.post(`${API}/auth/resend-otp`, { user_id: userId });
+      await axios.post(`${import.meta.env.VITE_BACKEND_PATH}/auth/resend-otp`, { user_id: userId });
       setTimer(59);
       setOtp(['', '', '', '', '', '']);
       setError('');
@@ -235,6 +236,46 @@ function AuthScreen({ mode, setMode, onOTPRequired }) {
   const [form, setForm] = useState({ firstname: '', lastname: '', email: '', password: '' });
   const [errors, setErrors] = useState({});
 
+  const {signIn,isLoaded} = useSignIn();
+  const {isSignedIn} = useAuth();
+  const {session} = useSession();
+  const {user} = useUser();
+
+  const handleGoogleLogin=async ()=>{
+    if(!isLoaded){
+      return
+    }
+    
+    // If Clerk remembers they are signed in, sync automatically to avoid Clerk's "Already signed in" popup error
+    if (isSignedIn && session && user) {
+      try {
+        const token = await session.getToken();
+        await axios.post(`${import.meta.env.VITE_BACKEND_PATH}/auth/google`, {
+          token,
+          firstname: user.firstName,
+          lastname: user.lastName,
+          email: user.emailAddresses[0]?.emailAddress,
+          google_id: user.id,
+        }, { withCredentials: true });
+        window.location.href = '/dashboard';
+      } catch (err) {
+        console.error('Fast-sync failed', err);
+      }
+      return;
+    }
+
+    try{
+      await signIn.authenticateWithRedirect({
+        strategy:"oauth_google",
+        redirectUrl:"/sso-callback",
+        redirectUrlComplete:"/dashboard"
+      })
+    }catch(error){
+      console.log(error)
+    }
+  }
+
+
   const handleChange = (e) => {
     setForm(prev => ({ ...prev, [e.target.name]: e.target.value }));
     setErrors(prev => ({ ...prev, [e.target.name]: '' }));
@@ -260,7 +301,7 @@ function AuthScreen({ mode, setMode, onOTPRequired }) {
     setLoading(true);
     try {
       if (mode === 'register') {
-        const res = await axios.post(`${API}/auth/register`, {
+        const res = await axios.post(`${import.meta.env.VITE_BACKEND_PATH}/auth/register`, {
           firstname: form.firstname,
           lastname: form.lastname,
           email: form.email,
@@ -268,11 +309,11 @@ function AuthScreen({ mode, setMode, onOTPRequired }) {
         });
         onOTPRequired(res.data.user_id, form.email);
       } else {
-        const res = await axios.post(`${API}/auth/login`, {
+        const res = await axios.post(`${import.meta.env.VITE_BACKEND_PATH}/auth/login`, {
           email: form.email,
           password: form.password,
         }, { withCredentials: true });
-
+        console.log(res.data)
         if (res.data.message?.includes('not verified')) {
           onOTPRequired(res.data.user_id, form.email);
         } else {
@@ -403,6 +444,7 @@ function AuthScreen({ mode, setMode, onOTPRequired }) {
         style={{ width: '100%', padding: '13px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--r-full)', color: 'var(--text)', fontSize: '15px', fontFamily: 'var(--font-body)', fontWeight: 500, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', transition: 'all 0.2s ease' }}
         onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--border-hover)'; e.currentTarget.style.background = 'var(--surface-2)'; }}
         onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.background = 'var(--surface)'; }}
+        onClick={handleGoogleLogin}
       >
         <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
           <path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.615z" fill="#4285F4"/>
@@ -425,11 +467,15 @@ function AuthScreen({ mode, setMode, onOTPRequired }) {
   );
 }
 
+
+
+
 // ─── Main Modal ───────────────────────────────
 export default function AuthModal({ mode: initialMode = 'register', onClose }) {
   const [mode, setMode] = useState(initialMode);
   const [screen, setScreen] = useState('auth');
   const [otpData, setOtpData] = useState({ userId: '', email: '' });
+
 
   useEffect(() => {
     const onKey = (e) => { if (e.key === 'Escape' && screen !== 'otp') onClose(); };

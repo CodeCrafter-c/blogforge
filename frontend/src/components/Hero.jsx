@@ -1,6 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { ArrowRight, Zap, Globe, FileText } from 'lucide-react';
+import { useClerk } from '@clerk/clerk-react';
 
 const fadeUp = (delay = 0) => ({
   initial: { opacity: 0, y: 24 },
@@ -41,9 +42,16 @@ const AgentStep = ({ icon: Icon, label, color, delay }) => (
 );
 
 export default function Hero({onGetStarted}) {
+  //     const {signOut}=useClerk()
+  //     async function ForceLogout() {
+  //       console.log("hi")
+  //     await signOut(); // 🔥 THIS WAS MISSING 
+  //  }
   return (
     <section style={{ padding: '160px 0 100px', position: 'relative', overflow: 'hidden' }}>
-
+        {/* <button onClick={() => ForceLogout()}>
+      Force Logout Clerk
+    </button> */}
       {/* Background glow blobs */}
       <div style={{
         position: 'absolute', top: '-200px', left: '50%', transform: 'translateX(-50%)',

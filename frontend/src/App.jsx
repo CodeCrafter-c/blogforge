@@ -1,15 +1,19 @@
 import React, { useState } from 'react';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import './index.css';
 import Cursor from './components/Cursor';
+import AuthModal from './components/Authmodal';
 import Navbar from './components/Navbar';
 import Hero from './components/Hero';
 import Features from './components/Features';
 import Pricing from './components/Pricing';
 import Footer from './components/Footer';
-import AuthModal from './components/Authmodal';
+import SSOCallback from './pages/SSOCallback';
+import Dashboard from './pages/Dashboard';
+import ProtectedRoute from './components/ProtectedRoute';
 
-function App() {
-  const [authModal, setAuthModal] = useState(null); // null | 'login' | 'register'
+function Landing() {
+  const [authModal, setAuthModal] = useState(null);
 
   return (
     <>
@@ -21,15 +25,28 @@ function App() {
         <Pricing onGetStarted={() => setAuthModal('register')} />
       </main>
       <Footer />
-
       {authModal && (
-        <AuthModal
-          mode={authModal}
-          onClose={() => setAuthModal(null)}
-        />
+        <AuthModal mode={authModal} onClose={() => setAuthModal(null)} />
       )}
     </>
   );
 }
 
-export default App;
+export default function App() {
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<Landing />} />
+        <Route path="/sso-callback" element={<SSOCallback />} />
+        <Route
+          path="/dashboard"
+          element={
+            <ProtectedRoute>
+              <Dashboard />
+            </ProtectedRoute>
+          }
+        />
+      </Routes>
+    </BrowserRouter>
+  );
+}
