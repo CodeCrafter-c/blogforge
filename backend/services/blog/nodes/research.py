@@ -1,48 +1,72 @@
 from langchain_tavily import TavilySearch
 from langchain_core.messages import SystemMessage,HumanMessage
-from tools import llm 
+from tools.llm import llm 
 from services.blog.states import State
 from schemas.agent import EvidencePack
 from services.blog.sse import emit,EVENTS
 from core.config import settings
 
-RESEARCH_SYSTEM="""
-You are a research synthesizer for technical writing.
+RESEARCH_SYSTEM = """
+You are a research synthesizer for blog content writing.
 
-Given raw web search results, produce a deduplicated list of EvidenceItem objects.
+Given raw web search results for a blog topic, produce a deduplicated list of EvidenceItem objects.
 
 Rules:
-- Only include items with a non-empty url.
-- Prefer relevant + authoritative sources (company blogs, docs, reputable outlets).
-- If a published date is explicitly present in the result payload, keep it as YYYY-MM-DD.
-  If missing or unclear, set published_at=null. Do NOT guess.
-- Keep snippets short.
-- Deduplicate by URL
+- Only include items with a non-empty URL.
+- Prefer authoritative, relevant sources: official sites, reputable publications,
+  academic sources, company blogs, recognized outlets for the topic's domain.
+- Do NOT bias toward tech sources unless the topic is technical.
+  For health topics prefer medical journals. For business prefer financial outlets. Etc.
+- If a published date is explicitly present, keep it as YYYY-MM-DD.
+  If missing or unclear, set published_at=null. Do NOT guess dates.
+- Keep snippets short and focused on what is factually useful.
+- Deduplicate by URL — never include the same URL twice.
+- If a result is clearly irrelevant to the topic, exclude it.
 """
-
-def tavily_search(query: str, max_results: int = 5) -> list[dict]: 
+def tavily_search(query: str, max_results: int = 5) -> list[dict]:
     tool = TavilySearch(
-        max_results=max_results, 
-        tavily_api_key=settings.TAVILY
+        max_results=max_results,
+        tavily_api_key=settings.TAVILY,
+        include_raw_content=False,  
+        search_depth="basic",
     )
-    
-    results = tool.invoke({"query": query})
-    print(results)
-    normalised: list[dict] = []
-    
-    for res in results or []:
-        normalised.append(
-            {
-                "title": res.get("title") or "",
-                "url": res.get("url") or "",
-                "snippet": res.get("content") or res.get("snippet") or "",
-                "published_at": res.get("published_date") or res.get("published_at"),
-                "source": res.get("source")
-            }
-        )
-        
+
+    response = tool.invoke({"query": query})
+
+    # handle all possible return formats
+    if isinstance(response, str):
+        # sometimes returns a string summary — no individual results
+        print(f"Tavily returned string: {response[:100]}")
+        return []
+
+    if isinstance(response, dict):
+        # might be wrapped in a results key
+        results = response.get("results", [])
+    elif isinstance(response, list):
+        results = response
+    else:
+        print(f"Unknown Tavily response type: {type(response)}")
+        return []
+
+    normalised = []
+    for res in results:
+        if isinstance(res, str):
+            # skip plain strings
+            continue
+        if not isinstance(res, dict):
+            continue
+        url = res.get("url") or ""
+        if not url:
+            continue
+        normalised.append({
+            "title": res.get("title") or "",
+            "url": url,
+            "snippet": res.get("content") or res.get("snippet") or "",
+            "published_at": res.get("published_date") or res.get("published_at"),
+            "source": res.get("source"),
+        })
+
     return normalised
-    
     
 async def research_node(state: State)->dict:
     blog_id = state.get("blog_id")
@@ -60,11 +84,16 @@ async def research_node(state: State)->dict:
     
     for i, query in enumerate(queries):
         await emit(blog_id, EVENTS["RESEARCH_START"], {
-            "message": f"🔎 Searching: {query}",
-            "query_index": i + 1,
-            "total_queries": len(queries),
-        })
-        raw_results.extend(tavily_search(query,max_results))
+        "message": f"🔎 Searching: {query}",
+        "query_index": i + 1,
+        "total_queries": len(queries),
+    })
+        try:
+            results = tavily_search(query, max_results)
+            raw_results.extend(results)
+        except Exception as e:
+            print(f"Search failed for '{query}': {e}")
+            continue 
 
     if not raw_results:
         await emit(blog_id, EVENTS["RESEARCH_DONE"], {

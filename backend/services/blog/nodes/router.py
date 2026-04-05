@@ -3,27 +3,31 @@ from services.blog.states import State
 from schemas.agent import RouterDecision
 from langchain_core.messages import SystemMessage,HumanMessage
 from services.blog.sse import emit,EVENTS
-ROUTER_SYSTEM="""
-You are a routing module for a technical blog planner.
+ROUTER_SYSTEM = """
+You are a routing module for a blog content planner.
 
-Decide whether web research is needed BEFORE planning.
+Given a blog topic, decide whether web research is needed BEFORE planning.
 
 Modes:
 - closed_book (needs_research=false):
-  Evergreen topics where correctness does not depend on recent facts (concepts, fundamentals).
+  Timeless topics where correctness does not depend on recent facts.
+  Examples: concepts, fundamentals, history, how-things-work, opinion pieces.
 - hybrid (needs_research=true):
-  Mostly evergreen but needs up-to-date examples/tools/models to be useful.
+  Mostly timeless but benefits from current examples, tools, stats, or recent developments.
+  Examples: best practices, comparisons, guides that reference current tools.
 - open_book (needs_research=true):
-  Mostly volatile: weekly roundups, "this week", "latest", rankings, pricing, policy/regulation.
+  Highly time-sensitive content. Examples: news roundups, "this week/month/year",
+  rankings, pricing, policy changes, product launches, current events.
 
-If needs_research=true:
-- Output 3–10 high-signal queries.
-- Queries should be scoped and specific (avoid generic queries like just "AI" or "LLM").
-- If user asked for "last week/this week/latest", reflect that constraint IN THE QUERIES.
+Important:
+- Do NOT assume the topic is technical or developer-focused.
+- Adapt to whatever domain the topic belongs to: tech, science, business, health, culture, etc.
+- If needs_research=true, output 3–10 high-signal, specific search queries.
+- Queries must reflect the actual domain and time constraint of the topic.
+- Avoid generic queries like just "AI" or "marketing".
 
-Also provide the reasoning for what you chose.
+Also provide reasoning for your decision.
 """
-
 
 async def router_node(state:State)->dict:
     blog_id=state.get("blog_id")
