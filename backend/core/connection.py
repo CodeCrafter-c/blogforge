@@ -20,6 +20,14 @@ async def create_indexes():
     await db["refresh_tokens"].create_index("user_id")
     await db["refresh_tokens"].create_index("created_at", expireAfterSeconds=60*60*24*7)
 
+    await db["blogs"].create_index("user_id")          
+    await db["blogs"].create_index("status")            
+    await db["blogs"].create_index([("user_id", 1), ("created_at", -1)]) 
+
+    await db["messages"].create_index("blog_id")        
+    await db["messages"].create_index("user_id")
+    await db["messages"].create_index([("blog_id", 1), ("created_at", 1)])
+
 async def close_mongo_connection():
     global client
     if client:

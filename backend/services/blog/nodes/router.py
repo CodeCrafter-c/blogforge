@@ -2,7 +2,7 @@ from tools.llm import llm
 from services.blog.states import State
 from schemas.agent import RouterDecision
 from langchain_core.messages import SystemMessage,HumanMessage
-
+from services.blog.sse import emit,EVENTS
 ROUTER_SYSTEM="""
 You are a routing module for a technical blog planner.
 
@@ -25,16 +25,30 @@ Also provide the reasoning for what you chose.
 """
 
 
-def router_node(state:State)->dict:
+async def router_node(state:State)->dict:
+    blog_id=state.get("blog_id")
+    await emit(blog_id, EVENTS["ROUTER_START"], {
+        "message": "🔍 Analyzing topic and deciding research strategy..."
+    })
+    
+    
     topic=state["topic"]
     decider=llm.with_structured_output(RouterDecision)
     
-    decision=decider.invoke(
+    decision=await decider.ainvoke(
         [
             SystemMessage(content=ROUTER_SYSTEM),
             HumanMessage(content=f"Topic : {topic}")
         ]
     )
+    
+    await emit(blog_id,EVENTS["ROUTER_DONE"],{
+      "message": f"📊 Mode decided: {decision.mode}",
+      "mode": decision.mode,
+      "needs_research": decision.needs_research,
+      "reasoning": decision.reasoning,
+    })
+    
     return {
         "needs_research":decision.needs_research,
         "mode":decision.mode,

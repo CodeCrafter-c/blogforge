@@ -1,15 +1,28 @@
-from typing import TypedDict,Annotated,List
-from schemas.agent import Plan,EvidenceItem
+from typing import TypedDict, Annotated, List, Optional, AsyncGenerator
+from schemas.agent import Plan, EvidenceItem, RouterDecision
+from asyncio import Queue
 import operator
 
+
 class State(TypedDict):
-    topic:str
-    
-    mode:str
-    needs_research:bool
-    queries:List[str]
-    evidence:List[EvidenceItem]
-    plan:Plan
-    sections:Annotated[List[tuple[int, str]], operator.add]
-    final:str
-    
+    topic: str
+    blog_id: str
+    user_id: str
+
+    mode: str
+    needs_research: bool
+    queries: List[str]
+    reasoning: str
+
+    evidence: List[EvidenceItem]
+
+    plan: Optional[Plan]
+
+    plan_approved: bool
+    plan_feedback: Optional[str]
+    draft_approved: bool
+    draft_feedback: Optional[str]
+
+    sections: Annotated[List[tuple], operator.add]  
+
+    final: str

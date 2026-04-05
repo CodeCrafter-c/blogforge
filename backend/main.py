@@ -1,6 +1,7 @@
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from routes.auth import auth_router
+from routes.blog import blog_router
 from core.config import settings
 from core.connection import connect_to_mongo, close_mongo_connection
 from fastapi.middleware.cors import CORSMiddleware
@@ -21,6 +22,8 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["*"], 
 )
 
 app.include_router(auth_router, prefix="/auth", tags=["Auth"])
+app.include_router(blog_router,prefix="/blog",tags=["Blog"])
