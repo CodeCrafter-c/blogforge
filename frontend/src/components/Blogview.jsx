@@ -151,18 +151,49 @@ export default function BlogView({ blog, onDelete }) {
   );
 }
 
-// Basic markdown → HTML (install react-markdown for production)
 function renderMarkdown(md) {
   if (!md) return '';
-  return md
-    .replace(/^# (.+)$/gm, '<h1 style="font-family:var(--font-display);font-size:32px;font-weight:800;color:var(--text);letter-spacing:-0.03em;margin:0 0 24px">$1</h1>')
-    .replace(/^## (.+)$/gm, '<h2 style="font-family:var(--font-display);font-size:22px;font-weight:700;color:var(--text);letter-spacing:-0.02em;margin:40px 0 16px">$1</h2>')
-    .replace(/^### (.+)$/gm, '<h3 style="font-family:var(--font-display);font-size:17px;font-weight:600;color:var(--text);margin:28px 0 12px">$1</h3>')
-    .replace(/\*\*(.+?)\*\*/g, '<strong style="color:var(--text);font-weight:600">$1</strong>')
-    .replace(/`([^`]+)`/g, '<code style="background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:2px 6px;font-size:13px;font-family:monospace;color:var(--blue)">$1</code>')
-    .replace(/```[\w]*\n([\s\S]*?)```/gm, '<pre style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px;overflow-x:auto;margin:20px 0"><code style="font-family:monospace;font-size:13px;color:var(--text);line-height:1.6">$1</code></pre>')
-    .replace(/^- (.+)$/gm, '<li style="margin:6px 0;color:var(--text-2)">$1</li>')
-    .replace(/(<li.*<\/li>)/s, '<ul style="padding-left:20px;margin:12px 0">$1</ul>')
-    .replace(/\n\n/g, '</p><p style="margin:0 0 16px;color:var(--text-2)">')
-    .replace(/^(?!<)(.+)$/gm, '<p style="margin:0 0 16px;color:var(--text-2)">$1</p>');
+  
+  // ── 1. extract code blocks and replace with placeholders ──
+  const codeBlocks = [];
+  md = md.replace(/```[\w]*\n([\s\S]*?)```/gm, (match, code) => {
+    const idx = codeBlocks.length;
+    codeBlocks.push(code);
+    return `%%CODEBLOCK_${idx}%%`;
+  });
+
+  // ── 2. now safely apply all other transformations ──
+  md = md
+    .replace(/^# (.+)$/gm,
+      '<h1 style="font-family:var(--font-display);font-size:32px;font-weight:800;color:var(--text);letter-spacing:-0.03em;margin:0 0 24px;line-height:1.1">$1</h1>')
+    .replace(/^## (.+)$/gm,
+      '<h2 style="font-family:var(--font-display);font-size:22px;font-weight:700;color:var(--text);letter-spacing:-0.02em;margin:40px 0 16px;line-height:1.2">$1</h2>')
+    .replace(/^### (.+)$/gm,
+      '<h3 style="font-family:var(--font-display);font-size:17px;font-weight:600;color:var(--text);margin:28px 0 10px">$1</h3>')
+    .replace(/`([^`\n]+)`/g,
+      '<code style="background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:2px 6px;font-size:13px;font-family:monospace;color:var(--blue)">$1</code>')
+    .replace(/\*\*(.+?)\*\*/g,
+      '<strong style="color:var(--text);font-weight:600">$1</strong>')
+    .replace(/\*(.+?)\*/g, '<em>$1</em>')
+    .replace(/^- (.+)$/gm,
+      '<li style="margin:6px 0;color:var(--text-2);line-height:1.6">$1</li>')
+    .replace(/(<li[^>]*>[\s\S]*?<\/li>)/g,
+      '<ul style="padding-left:24px;margin:16px 0;list-style:disc">$1</ul>')
+    .replace(/^\d+\. (.+)$/gm,
+      '<li style="margin:6px 0;color:var(--text-2);line-height:1.6">$1</li>')
+    .replace(/^---$/gm,
+      '<hr style="border:none;border-top:1px solid var(--border);margin:32px 0">')
+    .replace(/^(?!<)(.+)$/gm,
+      '<p style="margin:0 0 16px;color:var(--text-2);line-height:1.8">$1</p>')
+    .replace(/<p[^>]*>\s*<\/p>/g, '');
+
+  // ── 3. restore code blocks ──
+  codeBlocks.forEach((code, idx) => {
+    md = md.replace(
+      `%%CODEBLOCK_${idx}%%`,
+      `<pre style="background:var(--bg-3);border:1px solid var(--border);border-radius:12px;padding:20px;overflow-x:auto;margin:24px 0"><code style="font-family:monospace;font-size:13px;color:var(--text);line-height:1.7;white-space:pre">${code}</code></pre>`
+    );
+  });
+
+  return md;
 }
