@@ -8,7 +8,6 @@ from services.blog.sse import emit, EVENTS
 
 
 async def reducer(state: State) -> dict:
-    # queue = state.get("event_queue")
     blog_id = state.get("blog_id")
     plan = state["plan"]
 
@@ -16,22 +15,30 @@ async def reducer(state: State) -> dict:
         "message": "📝 Assembling final blog...",
     })
 
-    ordered_sections = [md for _, md in sorted(state["sections"], key=lambda x: x[0])]
+    ordered_sections = [
+        md for _, md in sorted(state.get("sections", []), key=lambda x: x[0])
+    ]
+
     body = "\n\n".join(ordered_sections).strip()
     final_md = f"# {plan.blog_title}\n\n{body}\n"
 
-    filename = f"{plan.blog_title}.md"
-    Path(filename).write_text(final_md, encoding="utf-8")
+    Path(f"{plan.blog_title}.md").write_text(final_md, encoding="utf-8")
 
     sources = [e.url for e in state.get("evidence", []) if e.url]
 
     if blog_id:
+        try:
+            obj_id = ObjectId(blog_id)
+        except Exception:
+            obj_id = blog_id
+
         db = get_db()
         await db["blogs"].update_one(
-            {"_id": ObjectId(blog_id)},
+            {"_id": obj_id},
             {"$set": {
                 "content": final_md,
                 "blog_title": plan.blog_title,
+                "plan": plan.model_dump(),
                 "sources": sources,
                 "status": "awaiting_draft_approval",
                 "updated_at": datetime.now(timezone.utc),
@@ -47,8 +54,6 @@ async def reducer(state: State) -> dict:
     })
 
     return {"final": final_md}
-
-
 async def finalize_node(state: State) -> dict:
     blog_id = state.get("blog_id")
 

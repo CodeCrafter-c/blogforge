@@ -5,7 +5,7 @@ from routes.blog import blog_router
 from core.config import settings
 from core.connection import connect_to_mongo, close_mongo_connection
 from fastapi.middleware.cors import CORSMiddleware
-
+from routes.twitter import twitter_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -27,3 +27,4 @@ app.add_middleware(
 
 app.include_router(auth_router, prefix="/auth", tags=["Auth"])
 app.include_router(blog_router,prefix="/blog",tags=["Blog"])
+app.include_router(twitter_router,prefix="/twitter",tags=["Twitter"])

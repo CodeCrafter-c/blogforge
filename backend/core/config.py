@@ -13,6 +13,10 @@ class Settings(BaseSettings):
     LLM:str="qwen2.5:7b"
     TAVILY:str
     CLERK_SECRET_KEY:str
+    TWITTER_CLIENT_SECRET:str
+    TWITTER_CLIENT_ID:str
+    TWITTER_REDIRECT_URI:str
+    NGROCK:str
     model_config=SettingsConfigDict(
         env_file=".env",
         extra="ignore"

@@ -9,7 +9,8 @@ import httpx
 from bson import ObjectId
 from core.config import settings
 from clerk_backend_api import Clerk
-from jose import jwt
+import jwt
+from datetime import datetime,timezone
 
 async def create_user(userData:UserRegister):
     db=get_db()
@@ -31,7 +32,11 @@ async def create_user(userData:UserRegister):
         "email":userData.email,
         "password":hashed_password,
         "auth_provider":'local',
-        "is_verified":False
+        "is_verified":False,
+        "twitter_refresh_token":None,
+        "twitter_access_token":None,
+        "created_at":datetime.now(timezone.utc),
+        "updated_at":datetime.now(timezone.utc)
     }
     
     result=await collection.insert_one(user)
@@ -127,7 +132,11 @@ async def google_login(data:UserRegisterGoogle,response:Response):
             "google_id":data.google_id,
             "password":None,
             "auth_provider":"google",
-            "is_verified":True
+            "is_verified":True,
+            "twitter_refresh_token":None,
+            "twitter_access_token":None,
+            "created_at":datetime.now(timezone.utc),
+            "updated_at":datetime.now(timezone.utc)
         }) 
         userId=str(result.inserted_id)
         
